@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
+    volumes:
+      - ./api:/app
+      - .env/:/app/.env
+      - ./files:/app/files
+    ports:
+      - 3001:3001
+    command: make run
+    depends_on:
+      - db
+  
+  app:
+    image: node:latest
+    command: npm run dev 
+    volumes:
+      - ./app:/app
+      - .env:/app/.env
+    working_dir: /app
+    ports:
+      - 3000:3000
+    environment:
+      - HOST=0.0.0.0
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - 5432:5432
+  
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf
+      - ./app/dist:/usr/share/nginx/html
+      - ./files:/usr/share/nginx/files
+      - ./static:/usr/share/nginx/static
+    depends_on:
+      - api
+      - app
