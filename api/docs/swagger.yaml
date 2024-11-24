@@ -1,0 +1,119 @@
+definitions:
+  entities.Customer:
+    properties:
+      address:
+        example: г. Москва, ул. Ленина, д. 1
+        type: string
+      name:
+        example: Иван Иванов
+        type: string
+      phone:
+        example: "+79991234567"
+        type: string
+    type: object
+  entities.Manager:
+    properties:
+      email:
+        example: mail@gmail.com
+        type: string
+      phone:
+        example: "+79991234567"
+        type: string
+    type: object
+  entities.Order:
+    properties:
+      customer:
+        $ref: '#/definitions/entities.Customer'
+      date:
+        example: 1630000000
+        type: integer
+      id:
+        example: 1
+        type: integer
+      manager:
+        $ref: '#/definitions/entities.Manager'
+      products:
+        items:
+          $ref: '#/definitions/entities.ProductInOrder'
+        type: array
+    type: object
+  entities.Product:
+    properties:
+      id:
+        example: 1
+        type: integer
+      img:
+        example: https://example.com/img.jpg
+        type: string
+      lifetime:
+        example: 86400
+        type: integer
+      name:
+        example: Эклеры "Домашние" (с домашним кремом) (ЛОРИ)
+        type: string
+      weight:
+        example: 1000
+        type: integer
+    type: object
+  entities.ProductInOrder:
+    properties:
+      amount:
+        example: 2
+        type: integer
+      id:
+        example: 1
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /api/order:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new order in the system.
+      parameters:
+      - description: Order Data
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Order'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Place Order
+      tags:
+      - orders
+  /api/products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of products from the service.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Product'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get Products
+      tags:
+      - products
+swagger: "2.0"

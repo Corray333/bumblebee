@@ -1,7 +1,7 @@
-package cmd
+package main
 
 import "github.com/Corray333/bumblebee/internal/app"
 
 func main() {
-	app.New().Run()
+	app.New().Init().Run()
 }

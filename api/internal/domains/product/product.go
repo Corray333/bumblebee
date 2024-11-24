@@ -1,6 +1,7 @@
 package product
 
 import (
+	"github.com/Corray333/bumblebee/internal/domains/product/external"
 	"github.com/Corray333/bumblebee/internal/domains/product/repository"
 	"github.com/Corray333/bumblebee/internal/domains/product/service"
 	"github.com/Corray333/bumblebee/internal/domains/product/transport"
@@ -10,13 +11,17 @@ import (
 
 type DomainController struct {
 	repo      repository.DomainRepository
-	service   service.DomainService
+	service   service.ProductService
 	transport transport.DomainTransport
 }
 
 func NewDomainController(router *chi.Mux, store *storage.Storage) *DomainController {
 	repo := repository.New(store)
-	service := service.New(repo)
+
+	external := external.New()
+
+	service := service.New(repo, external)
+
 	transport := transport.New(router, service)
 
 	return &DomainController{
@@ -28,6 +33,7 @@ func NewDomainController(router *chi.Mux, store *storage.Storage) *DomainControl
 
 func (c *DomainController) Build() {
 	c.transport.RegisterRoutes()
+	c.service.UpdateProducts()
 }
 
 func (c *DomainController) Run() {

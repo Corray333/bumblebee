@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/Corray333/bumblebee/docs"
 	"github.com/Corray333/bumblebee/internal/config"
 	"github.com/Corray333/bumblebee/internal/domains/product"
 	"github.com/Corray333/bumblebee/internal/storage"
