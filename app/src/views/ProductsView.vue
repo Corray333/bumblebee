@@ -5,7 +5,7 @@ import { ProductTransport } from '@/domains/product/transport';
 import { Button, Column, DataTable, Dialog, FileUpload, Textarea } from 'primevue';
 import { useToast } from 'primevue/usetoast';
 import { onBeforeMount, ref } from 'vue';
-
+import Toast from 'primevue/toast';
 const products = ref<Product[]>([])
 
 onBeforeMount(async ()=>{
@@ -19,10 +19,11 @@ const columns = ref([
 
 const toast = useToast()
 
-const onRowReorder = (event) => {
-  console.log(event)
-    products.value = event.value;
-    toast.add({severity:'success', summary: 'Rows Reordered', life: 3000});
+const onRowReorder = async (event: {dragIndex:number, dropIndex:number,value:Product[]}) => {
+  const from = products.value[event.dragIndex].id
+  products.value = event.value;
+  await ProductTransport.reorderProduct(from, event.dropIndex+1)
+  toast.add({severity:'success', summary: 'Порядок изменен', life: 3000});
 };
 
 
@@ -42,15 +43,26 @@ const hideDialog = () => {
     src.value = undefined
 }
 
-const saveProduct = () => {
+const saveProduct = async () => {
     submitted.value = true
-    if (product.value?.description) {
-        const index = products.value.findIndex(p => p.id === product.value?.id)
-        products.value[index] = {...product.value}
-        productShowDialog.value = false
-        src.value = undefined
-        toast.add({severity:'success', summary: 'Successful', detail: 'Product Updated', life: 3000});
+    if (!product.value?.description || !newFile.value) return
+    if (product.value?.id == 0){
+      await ProductTransport.createProduct(product.value, newFile.value)
+      products.value = await ProductTransport.getProducts()
+      toast.add({severity:'success', summary: 'Готово', detail: 'Продукт обновлен', life: 3000});
+    } else {
+      await ProductTransport.updateProduct(product.value, newFile.value)
+      products.value = await ProductTransport.getProducts()
+      toast.add({severity:'success', summary: 'Готово', detail: 'Продукт добавлен', life: 3000});
     }
+
+    productShowDialog.value = false
+    src.value = undefined
+}
+
+const newProduct = ()=>{
+    product.value = {id: 0, description: '', img: ''}
+    productShowDialog.value = true
 }
 
 const confirmDeleteProduct = (pick: Product) => {
@@ -64,18 +76,18 @@ const deleteSelectedProducts = async () => {
     deleteProductsDialog.value = false
     await ProductTransport.deleteProduct(product.value.id)
     product.value = undefined
-    toast.add({severity:'success', summary: 'Successful', detail: 'Product Deleted', life: 3000});
+    toast.add({severity:'success', summary: 'Готово', detail: 'Продукт удален', life: 3000});
 }
 
 const src = ref<string>()
 const newFile = ref<File>()
-function onFileSelect(event) {
+function onFileSelect(event: { files: File[] }) {
   const file = event.files[0];
   newFile.value = file;
   const reader = new FileReader();
 
   reader.onload = async (e) => {
-      src.value = e.target.result;
+      if (e.target) src.value = e.target.result as string;
   };
 
   reader.readAsDataURL(file);
@@ -85,6 +97,8 @@ function onFileSelect(event) {
 </script>
 
 <template>
+
+  <Toast position="top-right" />
 
   <Dialog v-model:visible="deleteProductsDialog" :style="{ width: '550px' }" header="Удаление" :modal="true">
     <div class="flex items-center gap-4 w-full">
@@ -122,7 +136,10 @@ function onFileSelect(event) {
   </Dialog>
 
   <main>
-    <h1>Продукты</h1>
+    <div class="flex justify-between items-center">
+      <h1>Продукты</h1>
+      <Button icon="pi pi-plus" label="Добавить" @click="newProduct()" />
+    </div>
     <DataTable  :value="products" editMode="row" resizableColumns @rowReorder="onRowReorder" tableStyle="min-width: 50rem">
       <Column rowReorder headerStyle="width: 3rem" :reorderableColumn="false" />
       <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"></Column>

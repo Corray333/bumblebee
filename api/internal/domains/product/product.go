@@ -5,6 +5,7 @@ import (
 	"github.com/Corray333/bumblebee/internal/domains/product/repository"
 	"github.com/Corray333/bumblebee/internal/domains/product/service"
 	"github.com/Corray333/bumblebee/internal/domains/product/transport"
+	"github.com/Corray333/bumblebee/internal/files"
 	"github.com/Corray333/bumblebee/internal/storage"
 	"github.com/Corray333/bumblebee/internal/telegram"
 	"github.com/go-chi/chi/v5"
@@ -17,12 +18,12 @@ type DomainController struct {
 	tg        *telegram.TelegramClient
 }
 
-func NewDomainController(router *chi.Mux, store *storage.Storage, tg *telegram.TelegramClient) *DomainController {
+func NewDomainController(router *chi.Mux, store *storage.Storage, tg *telegram.TelegramClient, fileManager *files.FileManager) *DomainController {
 	repo := repository.New(store)
 
 	external := external.New(tg.Bot)
 
-	service := service.New(repo, external)
+	service := service.New(repo, external, fileManager)
 
 	transport := transport.New(router, service, tg.Bot)
 
@@ -36,7 +37,7 @@ func NewDomainController(router *chi.Mux, store *storage.Storage, tg *telegram.T
 
 func (c *DomainController) Build() {
 	c.transport.RegisterRoutes()
-	c.service.UpdateProducts()
+	// c.service.UpdateProducts()
 	go c.transport.RunTelegram()
 }
 

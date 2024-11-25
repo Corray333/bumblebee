@@ -8,6 +8,7 @@ import (
 	_ "github.com/Corray333/bumblebee/docs"
 	"github.com/Corray333/bumblebee/internal/config"
 	"github.com/Corray333/bumblebee/internal/domains/product"
+	"github.com/Corray333/bumblebee/internal/files"
 	"github.com/Corray333/bumblebee/internal/storage"
 	"github.com/Corray333/bumblebee/internal/telegram"
 	"github.com/Corray333/bumblebee/pkg/server/logger"
@@ -71,10 +72,10 @@ func New() *App {
 		panic(err)
 	}
 
-	// fileManager := files.New()
+	fileManager := files.New()
 	telegramClient := telegram.New()
 
-	productController := product.NewDomainController(router, store, telegramClient)
+	productController := product.NewDomainController(router, store, telegramClient, fileManager)
 	app.AddController(productController)
 
 	return app

@@ -88,10 +88,10 @@ func (r *DomainRepository) SetProducts(ctx context.Context, products []entities.
 
 	for _, product := range products {
 		_, err := tx.ExecContext(ctx, `
-			INSERT INTO products (product_id, description, position)
-			VALUES ($1, $2, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
-			ON CONFLICT (product_id) DO UPDATE SET description = $2
-		`, product.ID, product.Description)
+			INSERT INTO products (description, position)
+			VALUES ($1, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
+			ON CONFLICT (product_id) DO UPDATE SET description = $1
+		`, product.Description)
 		if err != nil {
 			slog.Error("failed to insert product: " + err.Error())
 			return err
@@ -108,33 +108,35 @@ func (r *DomainRepository) SetProducts(ctx context.Context, products []entities.
 	return nil
 }
 
-func (r *DomainRepository) CreateProduct(ctx context.Context, product *entities.Product) (err error) {
+func (r *DomainRepository) CreateProduct(ctx context.Context, product *entities.Product) (id int64, err error) {
 	tx, isNew, err := r.getTx(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if isNew {
 		defer tx.Rollback()
 	}
 
-	_, err = tx.ExecContext(ctx, `
-		INSERT INTO products (product_id, description, position)
-		VALUES ($1, $2, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
-		ON CONFLICT (product_id) DO UPDATE SET description = $2
-	`, product.ID, product.Description)
+	row := tx.QueryRow(`
+		INSERT INTO products (description, position)
+		VALUES ($1, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
+		ON CONFLICT (product_id) DO UPDATE SET description = $1 RETURNING product_id
+	`, product.Description)
+
+	err = row.Scan(&id)
 	if err != nil {
 		slog.Error("failed to insert product: " + err.Error())
-		return err
+		return 0, err
 	}
 
 	if isNew {
 		if err := tx.Commit(); err != nil {
 			slog.Error("failed to commit transaction: " + err.Error())
-			return err
+			return 0, err
 		}
 	}
 
-	return nil
+	return id, nil
 }
 
 func (r *DomainRepository) ReorderProduct(ctx context.Context, productID int64, newPosition int) (err error) {

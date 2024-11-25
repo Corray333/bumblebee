@@ -3,6 +3,8 @@ package transport
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -21,8 +23,8 @@ type service interface {
 	GetProducts(offset int) (products []entities.Product, err error)
 	PlaceOrder(order *entities.Order) error
 	ReorderProduct(ctx context.Context, productID int64, newPosition int) error
-	CreateProduct(ctx context.Context, product *entities.Product) error
-	EditProduct(ctx context.Context, product *entities.Product) error
+	CreateProduct(ctx context.Context, product *entities.Product, photo []byte) error
+	EditProduct(ctx context.Context, product *entities.Product, photo []byte) error
 	DeleteProduct(ctx context.Context, productID int64) error
 
 	GetManagerByPhoneOrEmail(ctx context.Context, manager *entities.Manager) (*entities.Manager, error)
@@ -97,13 +99,38 @@ func (t *ProductTransport) placeOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *ProductTransport) createProduct(w http.ResponseWriter, r *http.Request) {
-	var product entities.Product
-	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		slog.Error("Error Parsing the Form: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := t.service.CreateProduct(r.Context(), &product); err != nil {
+	// Get the file from the form
+	file, _, err := r.FormFile("photo")
+	if err != nil {
+		slog.Error("Error Retrieving the File: " + err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		slog.Error("Error Reading the File: " + err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get the product data from the form
+	productData := r.FormValue("product")
+	var product entities.Product
+	if err := json.Unmarshal([]byte(productData), &product); err != nil {
+		slog.Error("Error Unmarshalling the Product: " + err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := t.service.CreateProduct(r.Context(), &product, fileBytes); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -113,20 +140,48 @@ func (t *ProductTransport) createProduct(w http.ResponseWriter, r *http.Request)
 
 func (t *ProductTransport) editProduct(w http.ResponseWriter, r *http.Request) {
 	productID := chi.URLParam(r, "productID")
+
+	// Parse the multipart form
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		slog.Error("Error Parsing the Form: " + err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get the file from the form
+	file, _, err := r.FormFile("photo")
+	if err != nil {
+		slog.Error("Error Retrieving the File: " + err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		slog.Error("Error Reading the File: " + err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get the product data from the form
+	productData := r.FormValue("product")
 	var product entities.Product
-	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+	if err := json.Unmarshal([]byte(productData), &product); err != nil {
+		slog.Error("Error Unmarshalling the Product: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	productIDInt, err := strconv.Atoi(productID)
 	if err != nil {
+		slog.Error("Error Parsing the Product ID: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	product.ID = int64(productIDInt)
-	if err := t.service.EditProduct(r.Context(), &product); err != nil {
+	if err := t.service.EditProduct(r.Context(), &product, fileBytes); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

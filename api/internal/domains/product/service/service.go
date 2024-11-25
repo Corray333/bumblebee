@@ -15,7 +15,7 @@ type repository interface {
 	Rollback(ctx context.Context) error
 
 	SetProducts(ctx context.Context, products []entities.Product) error
-	CreateProduct(ctx context.Context, product *entities.Product) (err error)
+	CreateProduct(ctx context.Context, product *entities.Product) (id int64, err error)
 	EditProduct(ctx context.Context, product *entities.Product) (err error)
 	DeleteProduct(ctx context.Context, productID int64) (err error)
 	GetProducts(ctx context.Context, offset int) (products []entities.Product, err error)
@@ -35,15 +35,21 @@ type external interface {
 	SendNewOrderMessage(ctx context.Context, order *entities.Order) error
 }
 
-type ProductService struct {
-	repo     repository
-	external external
+type fileManager interface {
+	SaveImage(file []byte, name string) error
 }
 
-func New(repo repository, external external) *ProductService {
+type ProductService struct {
+	repo        repository
+	external    external
+	fileManager fileManager
+}
+
+func New(repo repository, external external, fileManager fileManager) *ProductService {
 	s := &ProductService{
-		repo:     repo,
-		external: external,
+		repo:        repo,
+		external:    external,
+		fileManager: fileManager,
 	}
 	return s
 }
@@ -116,12 +122,30 @@ func (s *ProductService) ReorderProduct(ctx context.Context, productID int64, ne
 	return s.repo.ReorderProduct(ctx, productID, newPosition)
 }
 
-func (s *ProductService) CreateProduct(ctx context.Context, product *entities.Product) error {
-	return s.repo.CreateProduct(ctx, product)
+func (s *ProductService) CreateProduct(ctx context.Context, product *entities.Product, photo []byte) error {
+	id, err := s.repo.CreateProduct(ctx, product)
+	if err != nil {
+		return err
+	}
+
+	if err := s.fileManager.SaveImage(photo, strconv.Itoa(int(id))); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *ProductService) EditProduct(ctx context.Context, product *entities.Product) error {
-	return s.repo.EditProduct(ctx, product)
+func (s *ProductService) EditProduct(ctx context.Context, product *entities.Product, photo []byte) error {
+	err := s.repo.EditProduct(ctx, product)
+	if err != nil {
+		return err
+	}
+
+	if err := s.fileManager.SaveImage(photo, strconv.Itoa(int(product.ID))); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *ProductService) DeleteProduct(ctx context.Context, productID int64) error {

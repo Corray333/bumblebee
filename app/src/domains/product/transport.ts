@@ -3,7 +3,6 @@ import type { Product } from './entities'
 
 export class ProductTransport{
     static async getProducts(): Promise<Product[]>{
-        console.log(import.meta.env.VITE_API_URL)
         try {
             const response = await api.get('/products')
             console.log(response.data)
@@ -14,12 +13,18 @@ export class ProductTransport{
         }
     }
 
-    static async createProduct(product: Product): Promise<Product>{
-        const response = await api.post('/products', product)
+    static async createProduct(product: Product, photo: File): Promise<Product>{
+        const formData = new FormData();
+        formData.append('photo', photo);
+        formData.append('product', JSON.stringify(product));
+        const response = await api.post('/products', formData)
         return response.data
     }
-    static async updateProduct(product: Product): Promise<Product>{
-        const response = await api.put(`/products/${product.id}`, product)
+    static async updateProduct(product: Product, photo: File): Promise<Product>{
+        const formData = new FormData();
+        formData.append('photo', photo);
+        formData.append('product', JSON.stringify(product));
+        const response = await api.put(`/products/${product.id}`, formData)
         return response.data
     }
     static async deleteProduct(id: number): Promise<void>{

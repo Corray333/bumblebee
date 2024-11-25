@@ -1,6 +1,7 @@
 package files
 
 import (
+	"log/slog"
 	"os"
 	"time"
 
@@ -39,5 +40,25 @@ func (f *FileManager) UploadImage(file []byte, name string) (string, error) {
 	}
 
 	return filePath, nil
+
+}
+
+func (f *FileManager) SaveImage(file []byte, name string) error {
+	filePath := os.Getenv("FILE_PATH") + "/images/" + name + ".jpg"
+	newFile, err := os.Create(filePath)
+	if err != nil {
+		slog.Error("Error creating file: " + err.Error())
+		return err
+	}
+
+	defer newFile.Close()
+
+	_, err = newFile.Write(file)
+	if err != nil {
+		slog.Error("Error writing file: " + err.Error())
+		return err
+	}
+
+	return nil
 
 }

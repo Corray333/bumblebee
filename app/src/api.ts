@@ -1,7 +1,4 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
-import { isAxiosError } from 'axios'
-
-
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
     useAuth?: boolean
@@ -10,7 +7,7 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
     headers: {
-        'Content-Type': 'application/json',
+        // 'Content-Type': 'application/json',
     },
     withCredentials: true,
 })
