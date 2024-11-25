@@ -9,46 +9,41 @@ services:
       - ./api:/app
       - .env/:/app/.env
       - ./files:/app/files
+    ports:
+      - 3001:3001
     command: make run
     depends_on:
       - db
+  
+  app:
+    image: node:latest
+    command: npm run dev 
+    volumes:
+      - ./app:/app
+      - .env:/app/.env
+    working_dir: /app
+    ports:
+      - 3000:3000
+    environment:
+      - HOST=0.0.0.0
 
   db:
     image: postgres
     environment:
-      POSTGRES_DB: miniapp
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - 5432:5432
-
-  app:
-    image: node:latest
-    volumes:
-      - ./app:/app
-      - .env/:/app/.env
-    working_dir: /app
-    command: bash -c "npm install && npm run build"
   
   nginx:
     image: nginx:latest
     ports:
       - 80:80
-      - 443:443
     volumes:
-      - ./nginx/nginx-prod.conf:/etc/nginx/nginx.conf
-      - ./app/dist:/usr/share/nginx/html
+      - ./configs/nginx/nginx-dev.conf:/etc/nginx/nginx.conf
       - ./files:/usr/share/nginx/files
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
+      # - ./app/dist:/usr/share/nginx/html
+      # - ./static:/usr/share/nginx/static
     depends_on:
       - api
-      - db
-
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    restart: always
