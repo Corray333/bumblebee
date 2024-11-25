@@ -43,6 +43,8 @@ services:
     volumes:
       - ./configs/nginx/nginx-dev.conf:/etc/nginx/nginx.conf
       - ./files:/usr/share/nginx/files
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
       # - ./app/dist:/usr/share/nginx/html
       # - ./static:/usr/share/nginx/static
     depends_on:
