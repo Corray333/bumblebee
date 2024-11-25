@@ -88,10 +88,10 @@ func (r *DomainRepository) SetProducts(ctx context.Context, products []entities.
 
 	for _, product := range products {
 		_, err := tx.ExecContext(ctx, `
-			INSERT INTO products (product_id, name, weight, lifetime)
-			VALUES ($1, $2, $3, $4)
-			ON CONFLICT (product_id) DO UPDATE SET weight = $3, lifetime = $4
-		`, product.ID, product.Name, product.Weight, product.Lifetime)
+			INSERT INTO products (product_id, description, position)
+			VALUES ($1, $2, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
+			ON CONFLICT (product_id) DO UPDATE SET description = $2
+		`, product.ID, product.Description)
 		if err != nil {
 			slog.Error("failed to insert product: " + err.Error())
 			return err
@@ -108,15 +108,96 @@ func (r *DomainRepository) SetProducts(ctx context.Context, products []entities.
 	return nil
 }
 
-func (r *DomainRepository) GetProducts(ctx context.Context, offset int) (products []entities.Product, err error) {
-	tx, _, err := r.getTx(ctx)
+func (r *DomainRepository) CreateProduct(ctx context.Context, product *entities.Product) (err error) {
+	tx, isNew, err := r.getTx(ctx)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if isNew {
+		defer tx.Rollback()
 	}
 
-	err = tx.SelectContext(ctx, &products, `
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO products (product_id, description, position)
+		VALUES ($1, $2, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
+		ON CONFLICT (product_id) DO UPDATE SET description = $2
+	`, product.ID, product.Description)
+	if err != nil {
+		slog.Error("failed to insert product: " + err.Error())
+		return err
+	}
+
+	if isNew {
+		if err := tx.Commit(); err != nil {
+			slog.Error("failed to commit transaction: " + err.Error())
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *DomainRepository) ReorderProduct(ctx context.Context, productID int64, newPosition int) (err error) {
+	tx, isNew, err := r.getTx(ctx)
+	if err != nil {
+		return err
+	}
+	if isNew {
+		defer tx.Rollback()
+	}
+
+	// Получаем текущую позицию продукта
+	var currentPosition int
+	err = tx.QueryRow(`SELECT position FROM products WHERE product_id = $1`, productID).Scan(&currentPosition)
+	if err != nil {
+		slog.Error("failed to get current position: " + err.Error())
+		return err
+	}
+
+	// Обновляем позиции продуктов
+	if currentPosition < newPosition {
+		_, err = tx.Exec(`
+            UPDATE products
+            SET position = position - 1
+            WHERE position > $1 AND position <= $2
+        `, currentPosition, newPosition)
+	} else {
+		_, err = tx.Exec(`
+            UPDATE products
+            SET position = position + 1
+            WHERE position >= $1 AND position < $2
+        `, newPosition, currentPosition)
+	}
+	if err != nil {
+		slog.Error("failed to update positions: " + err.Error())
+		return err
+	}
+
+	// Устанавливаем новую позицию для продукта
+	_, err = tx.Exec(`
+        UPDATE products
+        SET position = $1
+        WHERE product_id = $2
+    `, newPosition, productID)
+	if err != nil {
+		slog.Error("failed to set new position: " + err.Error())
+		return err
+	}
+
+	if isNew {
+		if err := tx.Commit(); err != nil {
+			slog.Error("failed to commit transaction: " + err.Error())
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *DomainRepository) GetProducts(ctx context.Context, offset int) (products []entities.Product, err error) {
+	err = r.db.SelectContext(ctx, &products, `
 		SELECT *
-		FROM products OFFSET $1
+		FROM products ORDER BY position OFFSET $1
 	`, offset)
 	if err != nil {
 		slog.Error("failed to get products: " + err.Error())
@@ -126,10 +207,10 @@ func (r *DomainRepository) GetProducts(ctx context.Context, offset int) (product
 	return products, nil
 }
 
-func (r *DomainRepository) CreateOrder(ctx context.Context, order *entities.Order) (err error) {
+func (r *DomainRepository) CreateOrder(ctx context.Context, order *entities.Order) (orderID int64, err error) {
 	tx, isNew, err := r.getTx(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if isNew {
 		defer tx.Rollback()
@@ -142,7 +223,7 @@ func (r *DomainRepository) CreateOrder(ctx context.Context, order *entities.Orde
 	`, order.Date, order.Customer.Phone, order.Customer.Name, order.Customer.Address)
 	if err != nil {
 		slog.Error("failed to insert order: " + err.Error())
-		return err
+		return 0, err
 	}
 
 	err = row.Scan(&order.ID)
@@ -154,18 +235,18 @@ func (r *DomainRepository) CreateOrder(ctx context.Context, order *entities.Orde
 		`, order.ID, item.ID, item.Amount)
 		if err != nil {
 			slog.Error("failed to insert order item: " + err.Error())
-			return err
+			return 0, err
 		}
 	}
 
 	if isNew {
 		if err := tx.Commit(); err != nil {
 			slog.Error("failed to commit transaction: " + err.Error())
-			return err
+			return 0, err
 		}
 	}
 
-	return nil
+	return order.ID, nil
 }
 
 func (r *DomainRepository) SetManager(ctx context.Context, manager *entities.Manager) (err error) {
@@ -246,4 +327,61 @@ func (r *DomainRepository) GetProductsInOrder(ctx context.Context, order *entiti
 	}
 
 	return order, nil
+}
+
+func (r *DomainRepository) EditProduct(ctx context.Context, product *entities.Product) (err error) {
+	tx, isNew, err := r.getTx(ctx)
+	if err != nil {
+		return err
+	}
+	if isNew {
+		defer tx.Rollback()
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE products
+		SET description = $1
+		WHERE product_id = $2
+	`, product.Description, product.ID)
+	if err != nil {
+		slog.Error("failed to update product: " + err.Error())
+		return err
+	}
+
+	if isNew {
+		if err := tx.Commit(); err != nil {
+			slog.Error("failed to commit transaction: " + err.Error())
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *DomainRepository) DeleteProduct(ctx context.Context, productID int64) (err error) {
+	tx, isNew, err := r.getTx(ctx)
+	if err != nil {
+		return err
+	}
+	if isNew {
+		defer tx.Rollback()
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		DELETE FROM products
+		WHERE product_id = $1
+	`, productID)
+	if err != nil {
+		slog.Error("failed to delete product: " + err.Error())
+		return err
+	}
+
+	if isNew {
+		if err := tx.Commit(); err != nil {
+			slog.Error("failed to commit transaction: " + err.Error())
+			return err
+		}
+	}
+
+	return nil
 }

@@ -15,8 +15,13 @@ type repository interface {
 	Rollback(ctx context.Context) error
 
 	SetProducts(ctx context.Context, products []entities.Product) error
+	CreateProduct(ctx context.Context, product *entities.Product) (err error)
+	EditProduct(ctx context.Context, product *entities.Product) (err error)
+	DeleteProduct(ctx context.Context, productID int64) (err error)
 	GetProducts(ctx context.Context, offset int) (products []entities.Product, err error)
-	CreateOrder(ctx context.Context, order *entities.Order) error
+	ReorderProduct(ctx context.Context, productID int64, newPosition int) (err error)
+
+	CreateOrder(ctx context.Context, order *entities.Order) (orderID int64, err error)
 
 	GetProductsInOrder(ctx context.Context, order *entities.Order) (*entities.Order, error)
 
@@ -73,10 +78,12 @@ func (s *ProductService) GetProducts(offset int) (products []entities.Product, e
 }
 
 func (s *ProductService) PlaceOrder(order *entities.Order) error {
-	err := s.repo.CreateOrder(context.Background(), order)
+	orderID, err := s.repo.CreateOrder(context.Background(), order)
 	if err != nil {
 		return err
 	}
+
+	order.ID = orderID
 
 	manager, err := s.repo.GetManagerByPhoneOrEmail(context.Background(), &order.Manager)
 	if err != nil {
@@ -103,4 +110,20 @@ func (s *ProductService) GetManagerByID(ctx context.Context, manager *entities.M
 
 func (s *ProductService) SetManager(ctx context.Context, manager *entities.Manager) error {
 	return s.repo.SetManager(ctx, manager)
+}
+
+func (s *ProductService) ReorderProduct(ctx context.Context, productID int64, newPosition int) error {
+	return s.repo.ReorderProduct(ctx, productID, newPosition)
+}
+
+func (s *ProductService) CreateProduct(ctx context.Context, product *entities.Product) error {
+	return s.repo.CreateProduct(ctx, product)
+}
+
+func (s *ProductService) EditProduct(ctx context.Context, product *entities.Product) error {
+	return s.repo.EditProduct(ctx, product)
+}
+
+func (s *ProductService) DeleteProduct(ctx context.Context, productID int64) error {
+	return s.repo.DeleteProduct(ctx, productID)
 }

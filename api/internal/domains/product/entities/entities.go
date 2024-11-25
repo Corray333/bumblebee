@@ -1,11 +1,10 @@
 package entities
 
 type Product struct {
-	ID       int64  `json:"id" db:"product_id" example:"1"`
-	Name     string `json:"name" db:"name" example:"Эклеры \"Домашние\" (с домашним кремом) (ЛОРИ)"`
-	Weight   int    `json:"weight" db:"weight" example:"1000"`
-	Lifetime int64  `json:"lifetime" db:"lifetime" example:"86400"`
-	Img      string `json:"img" db:"img" example:"https://example.com/img.jpg"`
+	ID          int64  `json:"id" db:"product_id" example:"1"`
+	Description string `json:"description" db:"description" example:"Описание товара"`
+	Position    int    `json:"position" db:"position" example:"1"`
+	Img         string `json:"img" db:"img" example:"https://example.com/img.jpg"`
 }
 
 type ProductInOrder struct {

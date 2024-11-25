@@ -47,6 +47,7 @@ services:
       # - ./static:/usr/share/nginx/static
     depends_on:
       - api
+      - app
   
   certbot:
     image: certbot/certbot
