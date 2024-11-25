@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"os"
+	"strconv"
 
 	"github.com/Corray333/bumblebee/internal/domains/product/entities"
+	"github.com/spf13/viper"
 )
 
 type repository interface {
@@ -57,7 +60,16 @@ func (s *ProductService) UpdateProducts() error {
 }
 
 func (s *ProductService) GetProducts(offset int) (products []entities.Product, err error) {
-	return s.repo.GetProducts(context.Background(), offset)
+	products, err = s.repo.GetProducts(context.Background(), offset)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range products {
+		products[i].Img = os.Getenv("BASE_URL") + viper.GetString("img_url_path") + "/" + strconv.Itoa(int(products[i].ID)) + ".jpg"
+	}
+
+	return products, nil
 }
 
 func (s *ProductService) PlaceOrder(order *entities.Order) error {
