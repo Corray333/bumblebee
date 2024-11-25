@@ -42,7 +42,7 @@ services:
       - ./files:/usr/share/nginx/files
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-      # - ./app/dist:/usr/share/nginx/html
+      - ./app/dist:/usr/share/nginx/html
       # - ./static:/usr/share/nginx/static
     depends_on:
       - api
