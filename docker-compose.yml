@@ -41,10 +41,9 @@ services:
     ports:
       - 80:80
     volumes:
-      - ./nginx/nginx-dev.conf:/etc/nginx/nginx.conf
-      - ./app/dist:/usr/share/nginx/html
+      - ./configs/nginx/nginx-local.conf:/etc/nginx/nginx.conf
       - ./files:/usr/share/nginx/files
-      - ./static:/usr/share/nginx/static
+      # - ./app/dist:/usr/share/nginx/html
+      # - ./static:/usr/share/nginx/static
     depends_on:
       - api
-      - app

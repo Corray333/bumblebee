@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"log/slog"
 
 	"github.com/Corray333/bumblebee/internal/domains/product/entities"
@@ -86,10 +88,10 @@ func (r *DomainRepository) SetProducts(ctx context.Context, products []entities.
 
 	for _, product := range products {
 		_, err := tx.ExecContext(ctx, `
-			INSERT INTO products (name, weight, lifetime)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (product_id) DO UPDATE SET weight = $2, lifetime = $3
-		`, product.Name, product.Weight, product.Lifetime)
+			INSERT INTO products (product_id, name, weight, lifetime)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (product_id) DO UPDATE SET weight = $3, lifetime = $4
+		`, product.ID, product.Name, product.Weight, product.Lifetime)
 		if err != nil {
 			slog.Error("failed to insert product: " + err.Error())
 			return err
@@ -147,7 +149,7 @@ func (r *DomainRepository) CreateOrder(ctx context.Context, order *entities.Orde
 
 	for _, item := range order.Products {
 		_, err := tx.ExecContext(ctx, `
-			INSERT INTO order_items (order_id, product_id, amount)
+			INSERT INTO order_product (order_id, product_id, amount)
 			VALUES ($1, $2, $3)
 		`, order.ID, item.ID, item.Amount)
 		if err != nil {
@@ -164,4 +166,84 @@ func (r *DomainRepository) CreateOrder(ctx context.Context, order *entities.Orde
 	}
 
 	return nil
+}
+
+func (r *DomainRepository) SetManager(ctx context.Context, manager *entities.Manager) (err error) {
+	tx, isNew, err := r.getTx(ctx)
+	if err != nil {
+		return err
+	}
+	if isNew {
+		defer tx.Rollback()
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO managers (manager_id, state, phone, email)
+		VALUES ($1, $2, $3, $4) ON CONFLICT (manager_id) DO UPDATE SET state = $2, phone = $3, email = $4
+	`, manager.ID, manager.State, manager.Phone, manager.Email)
+	if err != nil {
+		slog.Error("failed to insert manager: " + err.Error())
+		return err
+	}
+
+	if isNew {
+		if err := tx.Commit(); err != nil {
+			slog.Error("failed to commit transaction: " + err.Error())
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *DomainRepository) GetManagerByPhoneOrEmail(ctx context.Context, manager *entities.Manager) (*entities.Manager, error) {
+
+	fmt.Printf("manager: %+v\n", manager)
+	err := r.db.Get(manager, `
+		SELECT *
+		FROM managers
+		WHERE phone = $1 OR email = $2
+	`, manager.Phone, manager.Email)
+	if err != nil {
+		slog.Error("failed to get manager: " + err.Error())
+		return nil, err
+	}
+
+	return manager, nil
+}
+
+func (r *DomainRepository) GetManagerByID(ctx context.Context, manager *entities.Manager) (*entities.Manager, error) {
+
+	err := r.db.Get(manager, `
+		SELECT *
+		FROM managers
+		WHERE manager_id = $1
+	`, manager.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		slog.Error("failed to get manager: " + err.Error())
+		return nil, err
+	}
+
+	return manager, nil
+}
+
+func (r *DomainRepository) GetProductsInOrder(ctx context.Context, order *entities.Order) (*entities.Order, error) {
+	for i := range order.Products {
+		product := entities.Product{}
+		err := r.db.Get(&product, `
+			SELECT *
+			FROM products
+			WHERE product_id = $1
+		`, order.Products[i].ID)
+		if err != nil {
+			slog.Error("failed to get product: " + err.Error())
+			return nil, err
+		}
+		order.ProductList = append(order.ProductList, product)
+	}
+
+	return order, nil
 }

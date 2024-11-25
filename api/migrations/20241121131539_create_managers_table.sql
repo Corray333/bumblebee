@@ -1,9 +1,10 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS managers (
-    manager_id BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    photo VARCHAR(18) NOT NULL,
-    email VARCHAR(255) NOT NULL
+    manager_id BIGINT NOT NULL PRIMARY KEY,
+    phone VARCHAR(18) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    state INT NOT NULL
 );
 -- +goose StatementEnd
 

@@ -4,12 +4,14 @@ go 1.22.1
 
 require (
 	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/rs/cors v1.11.1
 	github.com/spf13/viper v1.19.0
 	github.com/swaggo/http-swagger v1.3.4
+	github.com/swaggo/swag v1.8.1
 	github.com/xuri/excelize/v2 v2.9.0
 )
 
@@ -37,7 +39,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
-	github.com/swaggo/swag v1.8.1 // indirect
 	github.com/xuri/efp v0.0.0-20240408161823-9ad904a10d6d // indirect
 	github.com/xuri/nfp v0.0.0-20240318013403-ab9948c2c4a7 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

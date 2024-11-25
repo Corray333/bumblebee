@@ -14,11 +14,12 @@ type ProductInOrder struct {
 }
 
 type Order struct {
-	ID       int64            `json:"id" db:"order_id" example:"1"`
-	Products []ProductInOrder `json:"products" db:"products"`
-	Customer Customer
-	Manager  Manager
-	Date     int64 `json:"date" db:"date" example:"1630000000"`
+	ID          int64            `json:"id" db:"order_id" example:"1"`
+	Products    []ProductInOrder `json:"products" db:"products"`
+	ProductList []Product        `json:"-" db:"-" example:"-"`
+	Customer    Customer
+	Manager     Manager
+	Date        int64 `json:"date" db:"date" example:"1630000000"`
 }
 
 type Customer struct {
@@ -28,6 +29,8 @@ type Customer struct {
 }
 
 type Manager struct {
+	ID    int64  `json:"id" db:"manager_id" example:"1"`
 	Phone string `json:"phone" db:"phone" example:"+79991234567"`
 	Email string `json:"email" db:"email" example:"mail@gmail.com"`
+	State int    `json:"state" db:"state" example:"1"`
 }
