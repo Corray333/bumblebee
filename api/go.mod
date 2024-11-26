@@ -28,6 +28,7 @@ require (
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.4 // indirect
