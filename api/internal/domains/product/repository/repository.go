@@ -118,10 +118,10 @@ func (r *DomainRepository) CreateProduct(ctx context.Context, product *entities.
 	}
 
 	row := tx.QueryRow(`
-		INSERT INTO products (description, position)
-		VALUES ($1, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
+		INSERT INTO products (description, img, position)
+		VALUES ($1, $2, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))
 		ON CONFLICT (product_id) DO UPDATE SET description = $1 RETURNING product_id
-	`, product.Description)
+	`, product.Description, product.Img)
 
 	err = row.Scan(&id)
 	if err != nil {
@@ -197,7 +197,7 @@ func (r *DomainRepository) ReorderProduct(ctx context.Context, productID int64, 
 }
 
 func (r *DomainRepository) GetProducts(ctx context.Context, offset int) (products []entities.Product, err error) {
-	err = r.db.SelectContext(ctx, &products, `
+	err = r.db.Select(&products, `
 		SELECT *
 		FROM products ORDER BY position OFFSET $1
 	`, offset)
@@ -342,9 +342,9 @@ func (r *DomainRepository) EditProduct(ctx context.Context, product *entities.Pr
 
 	_, err = tx.ExecContext(ctx, `
 		UPDATE products
-		SET description = $1
-		WHERE product_id = $2
-	`, product.Description, product.ID)
+		SET description = $1, img = $2
+		WHERE product_id = $3
+	`, product.Description, product.Img, product.ID)
 	if err != nil {
 		slog.Error("failed to update product: " + err.Error())
 		return err

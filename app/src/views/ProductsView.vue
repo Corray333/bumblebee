@@ -45,7 +45,7 @@ const hideDialog = () => {
 
 const saveProduct = async () => {
     submitted.value = true
-    if (!product.value?.description || !newFile.value) return
+    if (!product.value?.description) return
     if (product.value?.id == 0){
       await ProductTransport.createProduct(product.value, newFile.value)
       products.value = await ProductTransport.getProducts()
@@ -130,8 +130,8 @@ function onFileSelect(event: { files: File[] }) {
     </div>
 
     <template #footer>
-        <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-        <Button label="Save" icon="pi pi-check" @click="saveProduct" />
+        <Button label="Отмена" icon="pi pi-times" text @click="hideDialog" />
+        <Button label="Сохранить" icon="pi pi-check" @click="saveProduct" />
     </template>
   </Dialog>
 

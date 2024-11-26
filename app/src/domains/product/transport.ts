@@ -13,19 +13,27 @@ export class ProductTransport{
         }
     }
 
-    static async createProduct(product: Product, photo: File): Promise<Product>{
+    static async createProduct(product: Product, photo: File | undefined){
         const formData = new FormData();
+        if (!photo) throw new Error('Photo is required');
         formData.append('photo', photo);
         formData.append('product', JSON.stringify(product));
-        const response = await api.post('/products', formData)
-        return response.data
+        await api.post('/products', formData)
+        return 
     }
-    static async updateProduct(product: Product, photo: File): Promise<Product>{
-        const formData = new FormData();
-        formData.append('photo', photo);
-        formData.append('product', JSON.stringify(product));
-        const response = await api.put(`/products/${product.id}`, formData)
-        return response.data
+    
+    static async updateProduct(product: Product, photo: File | undefined): Promise<boolean>{
+        try {
+            const formData = new FormData();
+            if(photo)formData.append('photo', photo);
+            formData.append('product', JSON.stringify(product));
+            await api.put(`/products/${product.id}`, formData)
+            return true
+        } catch (error) {
+            console.log(error)
+            return false
+        }
+
     }
     static async deleteProduct(id: number): Promise<void>{
         await api.delete(`/products/${id}`)

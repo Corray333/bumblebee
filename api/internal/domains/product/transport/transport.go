@@ -108,17 +108,25 @@ func (t *ProductTransport) createProduct(w http.ResponseWriter, r *http.Request)
 	// Get the file from the form
 	file, _, err := r.FormFile("photo")
 	if err != nil {
-		slog.Error("Error Retrieving the File: " + err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
+		if err != http.ErrMissingFile {
+			slog.Error("Error Retrieving the File: " + err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-	fileBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		slog.Error("Error Reading the File: " + err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	} else {
+		defer file.Close()
+	}
+
+	fileBytes := []byte{}
+
+	if file != nil {
+		fileBytes, err = ioutil.ReadAll(file)
+		if err != nil {
+			slog.Error("Error Reading the File: " + err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Get the product data from the form
@@ -151,17 +159,24 @@ func (t *ProductTransport) editProduct(w http.ResponseWriter, r *http.Request) {
 	// Get the file from the form
 	file, _, err := r.FormFile("photo")
 	if err != nil {
-		slog.Error("Error Retrieving the File: " + err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		if err != http.ErrMissingFile {
+			slog.Error("Error Retrieving the File: " + err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		defer file.Close()
 	}
-	defer file.Close()
 
-	fileBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		slog.Error("Error Reading the File: " + err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	fileBytes := []byte{}
+
+	if file != nil {
+		fileBytes, err = ioutil.ReadAll(file)
+		if err != nil {
+			slog.Error("Error Reading the File: " + err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Get the product data from the form

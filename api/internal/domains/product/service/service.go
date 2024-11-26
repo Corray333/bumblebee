@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/Corray333/bumblebee/internal/domains/product/entities"
-	"github.com/spf13/viper"
 )
 
 type repository interface {
@@ -37,6 +36,7 @@ type external interface {
 
 type fileManager interface {
 	SaveImage(file []byte, name string) error
+	UploadImage(file []byte, name string) (string, error)
 }
 
 type ProductService struct {
@@ -77,7 +77,7 @@ func (s *ProductService) GetProducts(offset int) (products []entities.Product, e
 	}
 
 	for i := range products {
-		products[i].Img = os.Getenv("BASE_URL") + viper.GetString("img_url_path") + "/" + strconv.Itoa(int(products[i].ID)) + ".jpg"
+		products[i].Img = os.Getenv("BASE_URL") + products[i].Img
 	}
 
 	return products, nil
@@ -123,12 +123,15 @@ func (s *ProductService) ReorderProduct(ctx context.Context, productID int64, ne
 }
 
 func (s *ProductService) CreateProduct(ctx context.Context, product *entities.Product, photo []byte) error {
-	id, err := s.repo.CreateProduct(ctx, product)
+	img, err := s.fileManager.UploadImage(photo, "")
 	if err != nil {
 		return err
 	}
 
-	if err := s.fileManager.SaveImage(photo, strconv.Itoa(int(id))); err != nil {
+	product.Img = img[2:]
+
+	_, err = s.repo.CreateProduct(ctx, product)
+	if err != nil {
 		return err
 	}
 
@@ -136,12 +139,17 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *entities.Pr
 }
 
 func (s *ProductService) EditProduct(ctx context.Context, product *entities.Product, photo []byte) error {
-	err := s.repo.EditProduct(ctx, product)
-	if err != nil {
-		return err
+	if len(photo) > 0 {
+		img, err := s.fileManager.UploadImage(photo, strconv.Itoa(int(product.ID)))
+		if err != nil {
+			return err
+		}
+
+		product.Img = img[2:]
 	}
 
-	if err := s.fileManager.SaveImage(photo, strconv.Itoa(int(product.ID))); err != nil {
+	err := s.repo.EditProduct(ctx, product)
+	if err != nil {
 		return err
 	}
 
