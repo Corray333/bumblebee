@@ -340,6 +340,8 @@ func (r *DomainRepository) EditProduct(ctx context.Context, product *entities.Pr
 		defer tx.Rollback()
 	}
 
+	fmt.Printf("product: %+v", product)
+
 	_, err = tx.ExecContext(ctx, `
 		UPDATE products
 		SET description = $1, img = $2

@@ -1,45 +1,63 @@
 import {api} from '@/api'
 import type { Product } from './entities'
+import { useToast } from 'primevue'
+import { useSystemStore } from '@/stores/counter'
+
+const systemStore = useSystemStore()
 
 export class ProductTransport{
     static async getProducts(): Promise<Product[]>{
         try {
             const response = await api.get('/products')
-            console.log(response.data)
             return response.data
         } catch (error) {
-            console.log(error)
+            console.log("Err: ",error)
+            if (systemStore.toast) systemStore.toast.add({severity:'error', summary: 'Не получилось получить продукты', life: 3000})
             return []
         }
     }
 
     static async createProduct(product: Product, photo: File | undefined){
-        const formData = new FormData();
-        if (!photo) throw new Error('Photo is required');
-        formData.append('photo', photo);
-        formData.append('product', JSON.stringify(product));
-        await api.post('/products', formData)
-        return 
+        try {     
+            const formData = new FormData();
+            if (!photo) throw new Error('Фото не выбрано');
+            formData.append('photo', photo);
+            formData.append('product', JSON.stringify(product));
+            await api.post('/products', formData)
+            return 
+        } catch (error) {
+            console.log(error)
+            if (systemStore.toast) systemStore.toast.add({severity:'error', summary: 'Не получилось создать продукт', life: 3000})
+        }
     }
     
-    static async updateProduct(product: Product, photo: File | undefined): Promise<boolean>{
+    static async updateProduct(product: Product, photo: File | undefined){
         try {
             const formData = new FormData();
             if(photo)formData.append('photo', photo);
             formData.append('product', JSON.stringify(product));
             await api.put(`/products/${product.id}`, formData)
-            return true
         } catch (error) {
             console.log(error)
-            return false
+            if (systemStore.toast) systemStore.toast.add({severity:'error', summary: 'Не получилось обновить продукт', life: 3000})
         }
 
     }
     static async deleteProduct(id: number): Promise<void>{
-        await api.delete(`/products/${id}`)
+        try {
+            await api.delete(`/products/${id}`)
+        } catch (error) {
+            console.log(error)
+            if (systemStore.toast) systemStore.toast.add({severity:'error', summary: 'Не получилось удалить продукт', life: 3000})
+        }
     }
 
     static async reorderProduct(id: number, position: number): Promise<void>{
-        await api.put(`/products/${id}/reorder?new_position=${position}`)
+        try {
+            await api.put(`/products/${id}/reorder?new_position=${position}`)
+        } catch (error) {
+            console.log(error)
+            if (systemStore.toast) systemStore.toast.add({severity:'error', summary: 'Не получилось изменить позицию продукта', life: 3000})
+        }
     }
 }

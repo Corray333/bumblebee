@@ -48,7 +48,7 @@ func compressImage(photo []byte) ([]byte, error) {
 
 	// Кодируем изображение в JPEG с заданным качеством
 	var buf bytes.Buffer
-	err = jpeg.Encode(&buf, newImg, &jpeg.Options{Quality: 85}) // Установите качество 85 (или любое другое)
+	err = jpeg.Encode(&buf, newImg, &jpeg.Options{Quality: 90}) // Установите качество 85 (или любое другое)
 	if err != nil {
 		return nil, err
 	}

@@ -16,9 +16,15 @@ definitions:
       email:
         example: mail@gmail.com
         type: string
+      id:
+        example: 1
+        type: integer
       phone:
         example: "+79991234567"
         type: string
+      state:
+        example: 1
+        type: integer
     type: object
   entities.Order:
     properties:
@@ -39,20 +45,17 @@ definitions:
     type: object
   entities.Product:
     properties:
+      description:
+        example: Описание товара
+        type: string
       id:
         example: 1
         type: integer
       img:
         example: https://example.com/img.jpg
         type: string
-      lifetime:
-        example: 86400
-        type: integer
-      name:
-        example: Эклеры "Домашние" (с домашним кремом) (ЛОРИ)
-        type: string
-      weight:
-        example: 1000
+      position:
+        example: 1
         type: integer
     type: object
   entities.ProductInOrder:

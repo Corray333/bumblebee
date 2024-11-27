@@ -5,7 +5,6 @@ import { ProductTransport } from '@/domains/product/transport';
 import { Button, Column, DataTable, Dialog, FileUpload, Textarea } from 'primevue';
 import { useToast } from 'primevue/usetoast';
 import { onBeforeMount, ref } from 'vue';
-import Toast from 'primevue/toast';
 const products = ref<Product[]>([])
 
 onBeforeMount(async ()=>{
@@ -98,7 +97,6 @@ function onFileSelect(event: { files: File[] }) {
 
 <template>
 
-  <Toast position="top-right" />
 
   <Dialog v-model:visible="deleteProductsDialog" :style="{ width: '550px' }" header="Удаление" :modal="true">
     <div class="flex items-center gap-4 w-full">
@@ -112,7 +110,7 @@ function onFileSelect(event: { files: File[] }) {
     </template>
   </Dialog>
 
-  <Dialog v-model:visible="productShowDialog" :style="{ width: '450px' }" header="Product Details" :modal="true">
+  <Dialog v-model:visible="productShowDialog" :style="{ width: '450px' }" header="Детали продукта" :modal="true">
     <div v-if="product" class="flex flex-col gap-6">
         <img v-if="!src && product.img" :src="product.img" :alt="product.img" class="shadow-md rounded-xl w-full" />
 

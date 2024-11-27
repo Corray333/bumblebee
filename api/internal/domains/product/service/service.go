@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/Corray333/bumblebee/internal/domains/product/entities"
 )
@@ -140,6 +142,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *entities.Pr
 
 func (s *ProductService) EditProduct(ctx context.Context, product *entities.Product, photo []byte) error {
 	if len(photo) > 0 {
+		fmt.Println("uploading image")
 		img, err := s.fileManager.UploadImage(photo, strconv.Itoa(int(product.ID)))
 		if err != nil {
 			return err
@@ -147,6 +150,8 @@ func (s *ProductService) EditProduct(ctx context.Context, product *entities.Prod
 
 		product.Img = img[2:]
 	}
+
+	product.Img = strings.TrimPrefix(product.Img, os.Getenv("BASE_URL"))
 
 	err := s.repo.EditProduct(ctx, product)
 	if err != nil {

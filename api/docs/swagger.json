@@ -105,9 +105,17 @@
                     "type": "string",
                     "example": "mail@gmail.com"
                 },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
                 "phone": {
                     "type": "string",
                     "example": "+79991234567"
+                },
+                "state": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -139,6 +147,10 @@
         "entities.Product": {
             "type": "object",
             "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Описание товара"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -147,17 +159,9 @@
                     "type": "string",
                     "example": "https://example.com/img.jpg"
                 },
-                "lifetime": {
+                "position": {
                     "type": "integer",
-                    "example": 86400
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Эклеры \"Домашние\" (с домашним кремом) (ЛОРИ)"
-                },
-                "weight": {
-                    "type": "integer",
-                    "example": 1000
+                    "example": 1
                 }
             }
         },
